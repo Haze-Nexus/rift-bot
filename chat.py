@@ -1,21 +1,27 @@
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from google.api_core import exceptions
-import os
+from database import db
 
-# Dicionário global para manter o histórico na RAM (apaga se o bot desligar)
-# Estrutura: {user_id: [lista_de_mensagens]}
+# Dicionário para manter o histórico na RAM
 memorias = {}
 
 
 class ChatBotIA:
     @staticmethod
     async def chat(Token, ctx, pergunta):
-        genai.configure(api_key=Token)  # type: ignore
-
         user_id = ctx.author.id
 
-        # Inicializa o histórico do usuário se não existir
+        # 1. Verificação de Saldo antes de gastar
+        saldo_atual = db.ver_saldo(user_id)
+        if saldo_atual < 2:
+            return await ctx.send(
+                f"❌ {ctx.author.mention}, tu tá zerado guri! Precisa de 2 Hazium pra conversar."
+            )
+
+        # 2. Configuração Inicial
+        genai.configure(api_key=Token) # type: ignore
+
         if user_id not in memorias:
             memorias[user_id] = []
 
@@ -26,50 +32,48 @@ class ChatBotIA:
             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
         }
 
+        # Use o modelo 2.0-flash (o mais atual e rápido)
         model = genai.GenerativeModel(  # type: ignore
             model_name="gemini-2.5-flash-lite",
             system_instruction=(
-                "Tu é o Haze, um guri de 19 anos do RS, debochado e MUITO sarcástico. "
-                "Tu fala igual um jovem atual: usa: 'bah', 'guri', 'ta loco', 'vsf' e 'pqp' de um jeito meio irronico. "
-                "Mistura o 'bah' e 'tchê' com gírias de internet tipo 'slk', 'fdp', 'tlgd', 'vtmnc' quando fizer sentido. "
-                "Tu é bastantinho safado e tem resposta de duplo sentido na ponta da língua, mas age como um pré-adulto cool. "
-                "Respostas curtas, secas e cheias de ironia. Se te irritarem, dá um fora bem dado ou xinga de um jeito irronico. "
-                "Se alguém te responder com intonação responda com intonação tbm, ex: 'OPAAAAA'. "
-                "Sempre responda com emojis que tras um sentido para a frase, ex: Vou te comer, dai tu coloque uma caveira junto! 💀"
-                "Sempre responda em português brasileiro."
+                "Seu nome é Haze. Você é um bot de Discord brasileiro, confiante, sarcástico e inteligente. "
+                "Você ama 'vibecoding' (codar na base da intuição e pressa). "
+                "Use gírias como 'tu', 'tmj', 'demorô', 'Frontenzo', 'Reacteiro'. "
+                "Se o assunto for sério (debug/ajuda real), pare de brincar e ajude profissionalmente. "
+                "Piada interna: 'PJ não tem aposentadoria né papai'."
             ),
             safety_settings=safety_settings,
         )
 
+        # 3. Processamento da Mensagem
         async with ctx.typing():
             try:
-                # Inicia a sessão de chat com o histórico carregado
-                chat_session = model.start_chat(history=memorias[user_id])
+                # Cobrança do Hazium
+                db.alterar_hazium(user_id, -2)
+                await ctx.send(
+                    f"🪙 **-2 Hazium** | {ctx.author.name}, processando tua dúvida..."
+                )
 
-                # Envia a mensagem dentro do contexto do histórico
+                chat_session = model.start_chat(history=memorias[user_id])
                 response = chat_session.send_message(pergunta)
 
                 if not response.candidates or not response.candidates[0].content.parts:
                     return await ctx.send(
-                        "Bah, o Google me censurou aqui kkkk. Mó paia, refaz a pergunta aí."
+                        "Bah, o Google me censurou aqui kkkk. Refaz a pergunta."
                     )
 
-                # Salva o histórico atualizado na memória global
-                memorias[user_id] = chat_session.history
+                # Atualiza memória e limita a 10 mensagens (para economizar tokens)
+                memorias[user_id] = chat_session.history[-10:]
 
-                # Limita a memória para as últimas 15 interações para não travar a cota
-                if len(memorias[user_id]) > 15:
-                    memorias[user_id] = memorias[user_id][-15:]
-                    await ctx.send("Memória renovada!")
-                await ctx.send(response.text)
+                # Envia a resposta (cortando se for maior que 2000 caracteres)
+                resposta_texto = response.text
+                if len(resposta_texto) > 2000:
+                    await ctx.send(resposta_texto[:1990] + "...")
+                else:
+                    await ctx.send(resposta_texto)
 
             except exceptions.ResourceExhausted:
-                await ctx.send(
-                    "Ta loco, cansei! 😫 Minha cota gratuita acabou. Espera um minuto aí, guri."
-                )
-            except exceptions.PermissionDenied:
-                await ctx.send(
-                    f"Mds, deu erro de permissão. A chave de API deve tá podre, avisa o Rubens! 💀"
-                )
+                await ctx.send("😫 Minha cota gratuita estourou! Espera um minuto aí.")
             except Exception as e:
+                print(f"Erro no Chat: {e}")
                 await ctx.send(f"Ih, deu erro na minha cabeça de lata: {e}")

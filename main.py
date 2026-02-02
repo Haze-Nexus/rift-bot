@@ -3,8 +3,6 @@ import discord
 from discord.ext import commands
 import os
 import asyncio
-
-# import sqlite3
 from dotenv import load_dotenv
 from jogos import Jogos
 from chat import ChatBotIA
@@ -12,9 +10,8 @@ from database import db
 
 load_dotenv()
 TOKEN_DISCORD = os.getenv("DISCORD_TOKEN")
-TOKEN_GIMINI = os.getenv("GIMINI_TOKEN")
+TOKEN_GEMINI = os.getenv("GIMINI_TOKEN")
 
-# Configuração de Intenções (Obrigatório no Python)
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -24,172 +21,135 @@ bot = commands.Bot(command_prefix="hz!", intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
-    print(f"🚀 Haze Nexus iniciado com sucesso! Logado como {bot.user}")
+    print(f"🚀 Haze Nexus logado como {bot.user}")
 
 
 @bot.event
 async def on_command_error(ctx, error):
-    # Verifica se o erro é por falta de permissão
     if isinstance(error, commands.MissingPermissions):
         msg = await ctx.send(
-            f"❌ {ctx.author.mention}, você não tem **aura** suficiente para usar esse comando!"
+            f"❌ {ctx.author.mention}, você não tem permissão para isso!"
         )
         await asyncio.sleep(5)
         await msg.delete()
-        return  # Finaliza aqui para não executar os outros ifs
 
-    # Verifica se faltou um argumento (ex: esqueceu de botar o número no !clean)
-    if isinstance(error, commands.MissingRequiredArgument):
+    elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send(
-            f"❓ Está faltando informação, {ctx.author.name}! Verifique como usar o comando."
+            f"❓ Falta informação! Use `hz!help` para ver como usar o comando."
         )
-        return
 
-    # Se o comando não existir, o bot ignora (para não poluir o terminal)
-    if isinstance(error, commands.CommandNotFound):
-        return
-
-    # Para qualquer outro erro, ele avisa no console para você debugar
-    print(f"Erro detectado: {error}")
+    elif not isinstance(error, commands.CommandNotFound):
+        print(f"Erro: {error}")
 
 
-# --- Comandos Administrativos ---
+# --- COMANDOS ADMINISTRATIVOS ---
+
+
 @bot.command()
-@commands.has_permissions(administrator=True)  # Só você/ADMs podem usar
-async def doar(ctx, alvo: str, quantidade: int):
-    # O MemberConverter tenta transformar a string (@menção, nome ou ID) em um usuário real
-    converter = commands.MemberConverter()
+@commands.has_permissions(administrator=True)
+async def doar(ctx, membro: discord.Member, quantidade: int):
     try:
-        usuario = await converter.convert(ctx, alvo)
-
-        db.alterar_hazium(usuario.id, quantidade)
-        if quantidade > 0:
-            await ctx.send(
-                f"✅ Feito! **{quantidade} Hazium** foram pra conta de **{usuario.display_name}**. 💰"
-            )
-        else:
-            await ctx.send(
-                f"✅ Feito! **{quantidade} Hazium** foram retirado da conta do **{usuario.display_name}**. 💰😂"
-            )
-    except commands.MemberNotFound:
+        db.alterar_hazium(membro.id, quantidade)
+        status = "enviados para" if quantidade > 0 else "retirados de"
         await ctx.send(
-            f"❌ Bah guri, não achei nenhum '{alvo}' aqui no server. Tu escreveu certo?"
+            f"✅ **{abs(quantidade)} Hazium** {status} **{membro.display_name}**."
         )
     except Exception as e:
-        await ctx.send(f"❌ Deu pau aqui: {e}")
+        await ctx.send(f"❌ Erro ao processar transação: {e}")
+
 
 @bot.command()
 @commands.has_permissions(manage_messages=True)
 async def clean(ctx, quantidade: int):
     qtd = max(1, min(quantidade, 100))
     await ctx.channel.purge(limit=qtd)
-    msg = await ctx.send(
-        f"✅ **{qtd}** mensagens incineradas por ordem de **{ctx.author.name}**!"
-    )
+    msg = await ctx.send(f"🗑️ **{qtd}** mensagens limpas por {ctx.author.name}!")
     await asyncio.sleep(3)
     await msg.delete()
 
 
 @bot.command()
 @commands.has_permissions(administrator=True)
-async def mention(ctx, repeticao: int, *, nome_alvo: str):
-    num_rep = max(1, min(repeticao, 15))
-
-    # Busca membro
-    usuario = discord.utils.find(
-        lambda m: nome_alvo.lower() in m.display_name.lower(), ctx.guild.members
-    )
-
-    if usuario:
-        for _ in range(num_rep):
-            await ctx.send(
-                f"Ei {usuario.mention}, o {ctx.author.name} está te chamando! 📣"
-            )
-            await asyncio.sleep(0.5)
-    else:
-        await ctx.send(f"Não encontrei ninguém com o nome `{nome_alvo}`. 🧐")
+async def mention(ctx, repeticao: int, membro: discord.Member):
+    num_rep = max(1, min(repeticao, 10))
+    for _ in range(num_rep):
+        await ctx.send(f"Ei {membro.mention}, o {ctx.author.name} está te chamando! 📣")
+        await asyncio.sleep(0.6)
 
 
-# --- Comandos Gerais ---
-@bot.command()
-async def chat(ctx, *, mensagem: str):  
-    try:
-        await ChatBotIA.chat(TOKEN_GIMINI, ctx, mensagem)
-    except Exception as e:
-        await ctx.send(f"Ih, deu erro na minha cabeça de lata: {e}")
+# --- COMANDOS DE ECONOMIA ---
+
 
 @bot.command()
-async def status(ctx, usuario: discord.Member = None): # type: ignore
+async def status(ctx, usuario: discord.Member = None):  # type: ignore
     usuario = usuario or ctx.author
-    valor = db.ver_saldo(usuario.id)
+    saldo = db.ver_saldo(usuario.id)
 
-    if valor < 0:
-        await ctx.send(f"Bah {usuario.mention}, tu tem **{valor} Hazium**... Tá devendo até as calça, pqp 💀")
+    if saldo < 0:
+        await ctx.send(
+            f"💀 {usuario.mention}, você está devendo! Saldo: **{saldo} Hz**"
+        )
     else:
-        await ctx.send(f"💰 {usuario.mention} tem **{valor} Hazium** na conta.")
+        await ctx.send(f"💰 {usuario.mention} possui **{saldo} Hazium**.")
 
 
 @bot.command()
 async def top(ctx):
     ranking = db.pegar_ranking()
     if not ranking:
-        return await ctx.send("Ninguém tem um tostão furado ainda. 💸")
+        return await ctx.send("🌵 O ranking está deserto...")
 
-    msg = "🏆 **RANKING DOS MAIS RICOS (HAZIUM)** 🏆\n\n"
-    for i, (user_id, saldo) in enumerate(ranking, 1):
-        msg += f"{i}º - <@{user_id}>: **{saldo} Hazium**\n"
-
-    await ctx.send(msg)
-
-
-@bot.command()
-async def games(ctx, valor: int):
-    if valor == 1:
-        await Jogos.mensagem_hazium(ctx, 5, "pedra papel tesoura")
-        await Jogos.pedra_papel_tesoura(ctx, bot)
-    elif valor == 2:
-        await Jogos.mensagem_hazium(ctx, 4, "roleta russa")
-        await Jogos.roleta_russa(ctx)
-    else:
-        await ctx.send("🎮 Jogo não encontrado. Tente `hz!help` para descobrir todos os jogos disponiveis.")
-
-@bot.command()
-async def help(ctx):
-    bot.help_command = None
     embed = discord.Embed(
-        title="📖 Haze Nexus - Manual de Instruções",
-        description=f"Olá **{ctx.author.name}**! Aqui está o que eu posso fazer, guri:",
-        color=discord.Color.blue(),
+        title="🏆 Top 10 Ricos - Haze Nexus",
+        color=discord.Color.gold(),
         timestamp=datetime.datetime.now(),
     )
 
-    embed.add_field(
-        name="🎮 Jogos",
-        value="`hz!games 1` - Pedra, Papel ou Tesoura.\n`hz!games 2` - Roleta russa.",
-        inline=False,
-    )
+    for i, (user_id, hazium) in enumerate(ranking, 1):
+        usuario = bot.get_user(user_id)
+        nome = usuario.name if usuario else f"ID: {user_id}"
+        medalha = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, "🔹")
+        embed.add_field(
+            name=f"{medalha} #{i} {nome}", value=f"**{hazium} Hz**", inline=False
+        )
 
-    embed.add_field(
-        name="💰 Economia (Hazium)",
-        value="`hz!status` - Vê quanto tu tem no bolso.\n`hz!top` - Ranking dos mais ricos do server.",
-        inline=False,
-    )
+    await ctx.send(embed=embed)
 
-    embed.add_field(
-        name="🤖 Inteligência",
-        value="`hz!chat [texto]` - Converse comigo (tenho memória, juro).",
-        inline=False,
-    )
 
-    embed.add_field(
-        name="🧹 Moderação & ADM",
-        value="`hz!clean [1-100]` - Limpa o chat.\n"
-        "`hz!mention [qtd] [nome]` - Spam de menção.\n"
-        "`hz!doar [user] [valor]` - Criar/Doar grana.",
-        inline=False,
-    )
+# --- COMANDOS DE DIVERSÃO ---
 
-    embed.set_footer(text="Haze Nexus Bot • Python Edition")
+
+@bot.command()
+async def chat(ctx, *, mensagem: str):
+    await ChatBotIA.chat(TOKEN_GEMINI, ctx, mensagem)
+
+
+@bot.command()
+async def games(ctx, id_jogo: int):
+    if id_jogo == 1:
+        await Jogos.mensagem_hazium(ctx, 2, "Pedra, Papel e Tesoura")
+        await Jogos.pedra_papel_tesoura(ctx, bot)
+    elif id_jogo == 2:
+        await Jogos.mensagem_hazium(ctx, 1, "Roleta Russa")
+        await Jogos.roleta_russa(ctx)
+    else:
+        await ctx.send("🎮 Jogo inválido! Use `1` para Jokenpô ou `2` para Roleta.")
+
+
+@bot.command()
+async def help(ctx):
+    embed = discord.Embed(
+        title="📖 Haze Nexus - Guia de Comandos",
+        description=f"Olá {ctx.author.mention}, aqui estão meus comandos:",
+        color=discord.Color.blue(),
+    )
+    embed.add_field(name="🎮 Jogos", value="`hz!games 1` | `hz!games 2`", inline=True)
+    embed.add_field(name="💰 Economia", value="`hz!status` | `hz!top`", inline=True)
+    embed.add_field(name="🤖 IA", value="`hz!chat [texto]`", inline=True)
+    embed.add_field(
+        name="🛠️ Mod", value="`hz!clean [1-100]` | `hz!doar [qtd] [user]` | `hz!mention [1-15] [user]`", inline=False
+    )
+    embed.set_footer(text="Haze Nexus v2.0")
     await ctx.send(embed=embed)
 
 
