@@ -16,7 +16,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="hz!", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix="r!", intents=intents, help_command=None)
 
 
 @bot.event
@@ -35,7 +35,7 @@ async def on_command_error(ctx, error):
 
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send(
-            f"❓ Falta informação! Use `hz!help` para ver como usar o comando."
+            f"❓ Falta informação! Use `r!help` para ver como usar o comando."
         )
 
     elif not isinstance(error, commands.CommandNotFound):
@@ -87,7 +87,7 @@ async def status(ctx, usuario: discord.Member = None):  # type: ignore
 
     if saldo < 0:
         await ctx.send(
-            f"💀 {usuario.mention}, você está devendo! Saldo: **{saldo} Hz**"
+            f"💀 {usuario.mention}, você está devendo! Saldo: **{saldo} Hazium**"
         )
     else:
         await ctx.send(f"💰 {usuario.mention} possui **{saldo} Hazium**.")
@@ -110,7 +110,7 @@ async def top(ctx):
         nome = usuario.name if usuario else f"ID: {user_id}"
         medalha = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, "🔹")
         embed.add_field(
-            name=f"{medalha} #{i} {nome}", value=f"**{hazium} Hz**", inline=False
+            name=f"{medalha} #{i} {nome}", value=f"**{hazium} Hazium**", inline=False
         )
 
     await ctx.send(embed=embed)
@@ -139,15 +139,15 @@ async def games(ctx, id_jogo: int):
 @bot.command()
 async def help(ctx):
     embed = discord.Embed(
-        title="📖 Haze Nexus - Guia de Comandos",
+        title="📖 Rift - Guia de Comandos",
         description=f"Olá {ctx.author.mention}, aqui estão meus comandos:",
         color=discord.Color.blue(),
     )
-    embed.add_field(name="🎮 Jogos", value="`hz!games 1` | `hz!games 2`", inline=True)
-    embed.add_field(name="💰 Economia", value="`hz!status` | `hz!top`", inline=True)
-    embed.add_field(name="🤖 IA", value="`hz!chat [texto]`", inline=True)
+    embed.add_field(name="🎮 Jogos", value="`r!games 1` | `r!games 2`", inline=True)
+    embed.add_field(name="💰 Economia", value="`r!status` | `r!top`", inline=True)
+    embed.add_field(name="🤖 IA", value="`r!chat [texto]`", inline=True)
     embed.add_field(
-        name="🛠️ Mod", value="`hz!clean [1-100]` | `hz!doar [qtd] [user]` | `hz!mention [1-15] [user]`", inline=False
+        name="🛠️ Mod", value="`r!clean [1-100]` | `r!doar [qtd] [user]` | `r!mention [1-15] [user]`", inline=False
     )
     embed.set_footer(text="Haze Nexus v2.0")
     await ctx.send(embed=embed)

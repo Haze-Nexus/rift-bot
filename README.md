@@ -19,7 +19,7 @@ O **Haze Nexus** é um bot de entretenimento e utilidade para Discord, desenvolv
 
 * [Python 3.10+](https://www.python.org/)
 * [Discord.py](https://discordpy.readthedocs.io/) - API para interação com o Discord.
-* [SQLite3](https://www.sqlite.org/) - Banco de dados relacional leve para armazenamento local.
+* [MongoDB](https://www.mongodb.org/) - Banco de dados relacional.
 * [Google Generative AI](https://ai.google.dev/) - Motor de IA (Gemini).
 * [Dotenv](https://pypi.org/project/python-dotenv/) - Gerenciamento de variáveis de ambiente.
 
@@ -61,9 +61,11 @@ pip install -r requirements.txt
 
 4. **Configure o arquivo .env: Crie um arquivo chamado .env na raiz e adicione suas chaves:**
 Snippet de código
-```env
+
+```bash
 DISCORD_TOKEN=seu_token_aqui
 GIMINI_TOKEN=sua_chave_gemini_aqui
+DATABASE_URL=sua_url_aqui
 ```
 
 **Execute o bot:** Bash
