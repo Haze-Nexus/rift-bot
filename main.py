@@ -16,7 +16,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="r!", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix="s!", intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
@@ -34,7 +34,7 @@ async def on_command_error(ctx, error):
 
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send(
-            f"❓ Falta informação! Use `r!help` para ver como usar o comando."
+            f"❓ Falta informação! Use `s!help` para ver como usar o comando."
         )
 
     elif not isinstance(error, commands.CommandNotFound):
@@ -120,8 +120,8 @@ async def top(ctx):
         return await ctx.send("🌵 O ranking está deserto...")
 
     embed = discord.Embed(
-        title="🏆 Top 10 Ricos - Haze Nexus",
-        color=discord.Color.gold(),
+        title="🏆 Top 10 +Ricos",
+        color=discord.Color.dark_gold(),
         timestamp=datetime.datetime.now(),
     )
 
@@ -149,34 +149,34 @@ async def games(ctx, id_jogo: int):
     elif id_jogo == 2:
         await Jogos.roleta_russa(ctx)
     else:
-        await ctx.send("🎮 Jogo inválido! Use `r!helpG` para descobrir os jogos")
+        await ctx.send("🎮 Jogo inválido! Use `s!discover` para descobrir os jogos")
 
 @bot.command()
-async def helpG(ctx):
+async def discover(ctx):
     embed = discord.Embed(
-        title="📖 Rift - Todos os Jogos",
+        title="📖 Sentinel - Todos os Jogos",
         description=f"Olá {ctx.author.mention}, aqui estão meus jogos:",
         color=discord.Color.purple(),
     )
-    embed.add_field(name="🎮 Jokenpo", value="`r!games 1` ", inline=False)
-    embed.add_field(name="💰 Roleta Russa", value="`r!games 2`", inline=False)
+    embed.add_field(name="🎮 Jokenpo", value="`s!games 1` ", inline=False)
+    embed.add_field(name="💰 Roleta Russa", value="`s!games 2`", inline=False)
     embed.set_footer(text="Haze Nexus v2.0")
     await ctx.send(embed=embed)
 
 @bot.command()
 async def help(ctx):
     embed = discord.Embed(
-        title="📖 Rift - Guia de Comandos",
+        title="📖 Sentinel - Guia de Comandos",
         description=f"Olá {ctx.author.mention}, aqui estão meus comandos:",
-        color=discord.Color.blue(),
+        color=discord.Color.pink(),
     )
-    embed.add_field(name="🎮 Jogos", value="`r!games [num]` | `r!helpG`", inline=True)
+    embed.add_field(name="🎮 Jogos", value="`s!games [num]` | `s!helpG`", inline=True)
 
-    embed.add_field(name="💰 Economia", value="`r!status` | `r!top`", inline=True)
-    embed.add_field(name="🤖 IA", value="`r!chat [texto]`", inline=True)
+    embed.add_field(name="💰 Economia", value="`s!status` | `s!top`", inline=True)
+    embed.add_field(name="🤖 IA", value="`s!chat [texto]`", inline=True)
     embed.add_field(
         name="🛠️ Mod",
-        value="`r!clean [1-100]` | `r!doar [user] [qtd]` | `r!receber` | `r!mention [1-15] [user]`",
+        value="`s!clean [1-100]` | `s!doar [user] [qtd]` | `s!receber` | `s!mention [1-15] [user]`",
         inline=False,
     )
     embed.set_footer(text="Haze Nexus v2.0")

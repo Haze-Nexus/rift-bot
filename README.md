@@ -1,6 +1,6 @@
-# 🌌 Haze Nexus Bot
+# 🌌 Sentinel bot
 
-O **Haze Nexus** é um bot de entretenimento e utilidade para Discord, desenvolvido em Python. Ele integra um sistema de economia robusto (Hazium), jogos interativos com punições de tempo real e inteligência artificial via Google Gemini.
+O **Sentinel** é um bot de entretenimento e utilidade para Discord, desenvolvido em Python. Ele integra um sistema de economia robusto (Hazium), jogos interativos com punições de tempo real e inteligência artificial via Google Gemini.
 
 ---
 
@@ -44,7 +44,7 @@ O **Haze Nexus** é um bot de entretenimento e utilidade para Discord, desenvolv
 
 1. **Clone o repositório:**
    ```bash
-   git clone [https://github.com/seu-usuario/haze-nexus-bot.git](https://github.com/seu-usuario/haze-nexus-bot.git)
+   git clone [https://github.com/seu-usuario/Sentinel.git](https://github.com/seu-usuario/haze-nexus-bot.git)
    ```
 2.  **Crie e ative o ambiente virtual:**
   ```bash
